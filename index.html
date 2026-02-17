@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>宏观对比汇总</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Manrope:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css"
+    />
+    <link rel="stylesheet" href="gdp-style.css?v=20260217-design-v19" />
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+    <script defer src="gdp-local-data.js?v=20260217-localized-v19"></script>
+    <script defer src="gdp-script.js?v=20260217-localized-v19"></script>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="panel header-panel">
+        <p class="kicker">Macro Comparison Hub</p>
+        <h1>宏观对比汇总（1980-2025）</h1>
+        <p class="subtitle">
+          支持人均GDP、GDP总量与人均可支配收入多指标切换，支持按国家显隐对比与年度节点悬浮查看。
+        </p>
+        <div class="meta-strip" aria-label="页面概览">
+          <span class="meta-pill">11 个经济体</span>
+          <span class="meta-pill">46 年序列</span>
+          <span class="meta-pill">五口径切换（人均GDP、总量GDP、可支配收入）</span>
+          <span class="meta-pill">全量本地数据秒开</span>
+        </div>
+        <p class="source-note">
+          数据说明：本页使用已本地化的数据快照，主要来源于 World Bank、IMF、OECD 及相关官方统计发布。
+          所有指标均经过统一口径处理与必要校验，可直接用于跨国家、跨年份的趋势对比分析。
+        </p>
+      </section>
+
+      <section class="panel content-panel">
+        <aside class="control-panel">
+          <h2>指标类型</h2>
+          <div class="metric-switch" role="radiogroup" aria-label="GDP 指标切换">
+            <label class="metric-item">
+              <input type="radio" name="gdpMetric" value="nominal" />
+              <span>人均GDP（国际汇率，美元）</span>
+            </label>
+            <label class="metric-item">
+              <input type="radio" name="gdpMetric" value="ppp" />
+              <span>人均GDP（PPP 美元）</span>
+            </label>
+            <label class="metric-item">
+              <input type="radio" name="gdpMetric" value="totalNominal" />
+              <span>GDP总量（国际汇率，美元）</span>
+            </label>
+            <label class="metric-item">
+              <input type="radio" name="gdpMetric" value="totalPpp" />
+              <span>GDP总量（PPP，美元）</span>
+            </label>
+            <label class="metric-item">
+              <input type="radio" name="gdpMetric" value="disposableIncome" checked />
+              <span>人均可支配收入（美元）</span>
+            </label>
+          </div>
+
+          <h2>图表形式</h2>
+          <div class="metric-switch" role="radiogroup" aria-label="图表形式切换">
+            <label class="metric-item">
+              <input type="radio" name="gdpChartMode" value="line" checked />
+              <span>折线图</span>
+            </label>
+            <label class="metric-item">
+              <input type="radio" name="gdpChartMode" value="bar" />
+              <span>柱状图（单一国家）</span>
+            </label>
+          </div>
+          <p id="gdpChartModeHint" class="hint">柱状图仅在单一国家显示时可用。</p>
+
+          <h2>国家显隐</h2>
+          <div id="gdpCountryToggles" class="toggle-list" aria-label="国家显示开关"></div>
+
+          <div class="control-actions">
+            <button id="gdpShowAllBtn" type="button">全部显示</button>
+            <button id="gdpHideAllBtn" type="button">全部隐藏</button>
+          </div>
+
+          <p class="hint">提示：鼠标移动到年份节点，可以查看当年各国家在当前指标下的值。</p>
+        </aside>
+
+        <div class="chart-panel">
+          <div class="chart-head">
+            <h2>多国趋势总览</h2>
+            <p>同图折线展示十一个经济体在当前指标下的中长期对比走势。</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="gdpChart" aria-label="1980-2025 GDP 多指标对比折线图"></canvas>
+            <div class="range-slider-wrap in-chart">
+              <div id="gdpRangeSlider" aria-label="年份区间滑块"></div>
+            </div>
+          </div>
+          <div class="chart-tools">
+            <button id="gdpDownloadBtn" type="button" disabled>下载当前指标 CSV</button>
+            <button id="gdpResetRangeBtn" type="button">重置全区间</button>
+            <a
+              href="https://api.db.nomics.world/v22/datasets/IMF/WEO:latest"
+              target="_blank"
+              rel="noopener noreferrer"
+              >DBnomics 源数据</a
+            >
+            <a
+              href="https://api.worldbank.org/v2/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >World Bank API</a
+            >
+          </div>
+          <p id="gdpRangeHint" class="range-hint">
+            当前区间：1980-2025（可拖动图中横轴滑块）
+          </p>
+          <p id="gdpStatusText" class="status-text">本地数据已内置，正在渲染图表...</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
