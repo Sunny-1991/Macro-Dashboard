@@ -1,0 +1,58 @@
+name: Weekly Data Refresh
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build local data snapshot
+        run: node scripts/build-local-data.mjs
+
+      - name: Detect data changes
+        id: detect_changes
+        run: |
+          if git diff --quiet -- gdp-local-data.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No data update detected."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Data update detected."
+          fi
+
+      - name: Bump local data asset version
+        if: steps.detect_changes.outputs.changed == 'true'
+        run: |
+          export LOCAL_DATA_VERSION="auto-$(date -u +%Y%m%d%H%M)"
+          node scripts/bump-local-data-version.mjs
+
+      - name: Commit and push updates
+        if: steps.detect_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gdp-local-data.js index.html
+          git commit -m "chore(data): weekly macro data refresh"
+          git push origin HEAD:main
+
+      - name: Skip commit when unchanged
+        if: steps.detect_changes.outputs.changed != 'true'
+        run: echo "Weekly check complete: no upstream data changes."

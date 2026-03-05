@@ -175,6 +175,41 @@ function buildLocalPayload(exportsObj) {
   };
 }
 
+function parseExistingPayload() {
+  if (!fs.existsSync(OUTPUT_PATH)) return null;
+
+  const raw = fs.readFileSync(OUTPUT_PATH, 'utf8');
+  const match = raw.match(/^window\.GDP_DASHBOARD_LOCAL_DATA\s*=\s*([\s\S]*?)\s*;\s*$/);
+  if (!match) {
+    return null;
+  }
+
+  try {
+    return {
+      raw,
+      payload: JSON.parse(match[1]),
+    };
+  } catch (error) {
+    console.warn(`Failed to parse existing local payload: ${error?.message || error}`);
+    return null;
+  }
+}
+
+function comparablePayload(payload) {
+  const clone = JSON.parse(JSON.stringify(payload));
+  if (clone?.meta) {
+    clone.meta.generatedAt = null;
+  }
+  return clone;
+}
+
+function hasDataChanges(previousPayload, nextPayload) {
+  if (!previousPayload) return true;
+  const prevComparable = comparablePayload(previousPayload);
+  const nextComparable = comparablePayload(nextPayload);
+  return JSON.stringify(prevComparable) !== JSON.stringify(nextComparable);
+}
+
 async function main() {
   let source = fs.readFileSync(SCRIPT_PATH, 'utf8');
 
@@ -193,11 +228,22 @@ async function main() {
 
   await exportsObj.init();
   const payload = buildLocalPayload(exportsObj);
+  const existing = parseExistingPayload();
+  const dataChanged = hasDataChanges(existing?.payload, payload);
+
+  if (!dataChanged && existing?.payload?.meta?.generatedAt) {
+    payload.meta.generatedAt = existing.payload.meta.generatedAt;
+  }
 
   const output = `window.GDP_DASHBOARD_LOCAL_DATA = ${JSON.stringify(payload)};\n`;
-  fs.writeFileSync(OUTPUT_PATH, output, 'utf8');
+  const shouldWrite = dataChanged || !existing?.raw || existing.raw !== output;
 
-  console.log(`Local data generated: ${OUTPUT_PATH}`);
+  if (shouldWrite) {
+    fs.writeFileSync(OUTPUT_PATH, output, 'utf8');
+    console.log(`Local data generated: ${OUTPUT_PATH}`);
+  } else {
+    console.log('No metric/source updates detected; local snapshot unchanged.');
+  }
   console.log(`Countries: ${payload.countries.length}, metrics: ${Object.keys(payload.metrics).length}, years: ${payload.years.length}`);
 }
 
