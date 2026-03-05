@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
-const ROOT = '/Users/coattail/Documents/New project/gdp-dashboard';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT = path.resolve(__dirname, '..');
 const SCRIPT_PATH = path.join(ROOT, 'gdp-script.js');
 const OUTPUT_PATH = path.join(ROOT, 'gdp-local-data.js');
 
@@ -41,6 +44,19 @@ function buildContext() {
     { checked: false, value: 'totalNominal', addEventListener() {} },
     { checked: false, value: 'totalPpp', addEventListener() {} },
     { checked: true, value: 'disposableIncome', addEventListener() {} },
+    { checked: false, value: 'imports', addEventListener() {} },
+    { checked: false, value: 'exports', addEventListener() {} },
+    { checked: false, value: 'tradeTotal', addEventListener() {} },
+    { checked: false, value: 'tradeBalance', addEventListener() {} },
+    { checked: false, value: 'populationTotal', addEventListener() {} },
+    { checked: false, value: 'populationIncrement', addEventListener() {} },
+    { checked: false, value: 'populationGrowthRate', addEventListener() {} },
+    { checked: false, value: 'agingRate', addEventListener() {} },
+    { checked: false, value: 'fertilityRate', addEventListener() {} },
+    { checked: false, value: 'fiscalRevenue', addEventListener() {} },
+    { checked: false, value: 'fiscalExpenditure', addEventListener() {} },
+    { checked: false, value: 'fiscalDeficit', addEventListener() {} },
+    { checked: false, value: 'militaryExpenditure', addEventListener() {} },
   ];
 
   const documentStub = {
@@ -104,6 +120,17 @@ function buildContext() {
     Chart: FakeChart,
   };
 
+  context.addEventListener = () => {};
+  context.removeEventListener = () => {};
+  context.requestAnimationFrame = (callback) => {
+    if (typeof callback === 'function') {
+      return setTimeout(() => callback(Date.now()), 0);
+    }
+    return 0;
+  };
+  context.cancelAnimationFrame = (id) => {
+    clearTimeout(id);
+  };
   context.window = context;
   context.globalThis = context;
   return context;
