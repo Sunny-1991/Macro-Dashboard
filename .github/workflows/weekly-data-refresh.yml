@@ -55,4 +55,4 @@ jobs:
 
       - name: Skip commit when unchanged
         if: steps.detect_changes.outputs.changed != 'true'
-        run: echo "Weekly check complete: no upstream data changes."
+        run: 'echo "Weekly check complete: no upstream data changes."'
